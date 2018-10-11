@@ -12,7 +12,7 @@ import Cartography
 
 final class NanoButton: UIButton {
 
-    enum ButtonType {
+    enum ButtonT: String {
         case lightBlue, lightBlueSend, darkBlue, orange, grey
 
         var textColor: UIColor {
@@ -40,16 +40,16 @@ final class NanoButton: UIButton {
         }
     }
 
-    init(withType type: ButtonType) {
+    init(withType t: ButtonT) {
         super.init(frame: .zero)
 
         layer.cornerRadius = 3
         clipsToBounds = true
 
-        titleLabel?.textColor = type.textColor
+        titleLabel?.textColor = t.textColor
         titleLabel?.font = Styleguide.Fonts.notoSansRegular.font(ofSize: 17)
-        setBackgroundColor(color: type.backgroundColor, forState: .normal)
-        setBackgroundColor(color: type.backgroundColor.darkerColor(percent: 0.2), forState: .highlighted)
+        setBackgroundColor(color: t.backgroundColor, forState: .normal)
+        setBackgroundColor(color: t.backgroundColor.darkerColor(percent: 0.2), forState: .highlighted)
 
     }
 

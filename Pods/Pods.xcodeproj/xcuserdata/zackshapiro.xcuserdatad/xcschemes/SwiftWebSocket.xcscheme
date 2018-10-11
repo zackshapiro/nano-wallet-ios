@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0700"
+   LastUpgradeVersion = "0930"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -13,11 +13,11 @@
             buildForProfiling = "YES"
             buildForArchiving = "YES">
             <BuildableReference
-               BuildableIdentifier = 'primary'
-               BlueprintIdentifier = '4822E63F302F14BFAD38E6E2C732A48A'
-               BlueprintName = 'SwiftWebSocket'
-               ReferencedContainer = 'container:Pods.xcodeproj'
-               BuildableName = 'SwiftWebSocket.framework'>
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DD783C369066016AF1D2C9D80015F290"
+               BlueprintName = "SwiftWebSocket"
+               ReferencedContainer = "container:Pods.xcodeproj"
+               BuildableName = "SwiftWebSocket.framework">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
