@@ -38,52 +38,52 @@ class HomeViewController: UIViewController {
 
         AnalyticsEvent.homeViewed.track()
 
-        // Updates price when you scroll through the Page View Controller
-        viewModel.lastBTCTradePrice
-            .producer
-            .take(during: lifetime)
-            .observe(on: UIScheduler())
-            .startWithValues { _ in
-                self.tableView?.refreshControl?.endRefreshing()
-            }
-
-        viewModel.transactions
-            .producer
-            .take(during: lifetime)
-            .observe(on: UIScheduler())
-            .startWithValues { _ in
-                self.tableView?.reloadData()
-            }
-
-        SignalProducer.combineLatest(viewModel.hasNetworkConnection, viewModel.addressIsOnNetwork, viewModel.isCurrentlySyncing, viewModel.transactableAccountBalance)
-            .producer
-            .take(during: lifetime)
-            .observe(on: UIScheduler())
-            .startWithValues { hasNetworkConnection, addressIsOnNetwork, isCurrentlySyncing, transactableBalance in
-                guard hasNetworkConnection else { self.sendButton?.isEnabled = false; return }
-                guard addressIsOnNetwork   else { self.sendButton?.isEnabled = false; return }
-                guard transactableBalance.compare(0) == .orderedDescending else { self.sendButton?.isEnabled = false; return }
-
-                self.sendButton?.isEnabled = !isCurrentlySyncing
-        }
-
-        viewModel.lastBlockCount
-            .producer
-            .take(during: lifetime)
-            .observe(on: UIScheduler())
-            .startWithValues { _ in
-                if let _ = self.tableView?.refreshControl?.isRefreshing {
-                    self.tableView?.refreshControl?.endRefreshing()
-                }
-            }
-
-        viewModel.localCurrency
-            .producer
-            .take(during: lifetime)
-            .observe(on: UIScheduler())
-            .startWithValues { _ in
-                self.viewModel.fetchLatestPrices()
-        }
+//        // Updates price when you scroll through the Page View Controller
+//        viewModel.lastBTCTradePrice
+//            .producer
+//            .take(during: lifetime)
+//            .observe(on: UIScheduler())
+//            .startWithValues { _ in
+//                self.tableView?.refreshControl?.endRefreshing()
+//            }
+//
+//        viewModel.transactions
+//            .producer
+//            .take(during: lifetime)
+//            .observe(on: UIScheduler())
+//            .startWithValues { _ in
+//                self.tableView?.reloadData()
+//            }
+//
+//        SignalProducer.combineLatest(viewModel.hasNetworkConnection, viewModel.addressIsOnNetwork, viewModel.isCurrentlySyncing, viewModel.transactableAccountBalance)
+//            .producer
+//            .take(during: lifetime)
+//            .observe(on: UIScheduler())
+//            .startWithValues { hasNetworkConnection, addressIsOnNetwork, isCurrentlySyncing, transactableBalance in
+//                guard hasNetworkConnection else { self.sendButton?.isEnabled = false; return }
+//                guard addressIsOnNetwork   else { self.sendButton?.isEnabled = false; return }
+//                guard transactableBalance.compare(0) == .orderedDescending else { self.sendButton?.isEnabled = false; return }
+//
+//                self.sendButton?.isEnabled = !isCurrentlySyncing
+//        }
+//
+//        viewModel.lastBlockCount
+//            .producer
+//            .take(during: lifetime)
+//            .observe(on: UIScheduler())
+//            .startWithValues { _ in
+//                if let _ = self.tableView?.refreshControl?.isRefreshing {
+//                    self.tableView?.refreshControl?.endRefreshing()
+//                }
+//            }
+//
+//        viewModel.localCurrency
+//            .producer
+//            .take(during: lifetime)
+//            .observe(on: UIScheduler())
+//            .startWithValues { _ in
+//                self.viewModel.fetchLatestPrices()
+//        }
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -96,10 +96,25 @@ class HomeViewController: UIViewController {
         navigationController?.navigationBar.tintColor = Styleguide.Colors.lightBlue.color
         super.viewWillAppear(animated)
 
-        viewModel.isCurrentlySending.value = false
-        if viewModel.socket.readyState != .open {
-            viewModel.socket.open()
-        }
+        let ac = UIAlertController(title: "App has expired", message: "Nano Wallet for iOS is no longer in beta, it's live on the App Store and this TestFight beta is no longer supported", preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "Copy My Wallet Seed", style: .default, handler: { _ in
+            UIPasteboard.general.string = UserService().fetchCredentials()?.seed
+
+            let a = UIAlertController(title: "Wallet Seed Copied", message: nil, preferredStyle: .alert)
+            a.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(a, animated: true)
+        }))
+
+        ac.addAction(UIAlertAction(title: "Download Nano Wallet for iOS from the App Store", style: .default, handler: { _ in
+            UIApplication.shared.open(URL(string: "https://itunes.apple.com/us/app/nano-wallet-for-ios/id1373912752?mt=8")!)
+        }))
+
+        present(ac, animated: true)
+
+//        viewModel.isCurrentlySending.value = false
+//        if viewModel.socket.readyState != .open {
+//            viewModel.socket.open()
+//        }
     }
 
     override func viewDidLoad() {

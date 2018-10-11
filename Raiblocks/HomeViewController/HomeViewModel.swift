@@ -180,151 +180,151 @@ final class HomeViewModel {
 
         self.socket = WebSocket(urlString)
 
-        NotificationCenter.default.addObserver(self, selector: #selector(appWasReopened(_:)), name: Notification.Name(rawValue: "ReestablishConnection"), object: nil)
-
-        socket.event.open = {
-//            print("socket opened")
-            self._hasNetworkConnection.value = true
-
-            self.socket.sendMultiple(endpoints: [
-                .accountSubscribe(uuid: self.userService.fetchCredentials()?.socketUUID, address: self.address),
-                .accountCheck(address: self.address),
-            ])
-        }
-
-        socket.event.close = { code, reason, clean in
-            AnalyticsEvent.socketClosedHome.track(customAttributes: ["code": code, "reason": reason])
-
-            self._hasNetworkConnection.value = false
-            // print("CONNECTION WAS CLOSED")
-        }
-
-        socket.event.error = { error in
-            AnalyticsEvent.socketErrorHome.track(customAttributes: ["error": error.localizedDescription])
-            // print("error \(error)")
-        }
-
-        self.socket.event.message = { message in
-//            print(message) // Uncomment for development
-//            print("")
-            guard let str = message as? String, let data = str.asUTF8Data() else { return }
-
-            if let accountCheck = genericDecoder(decodable: AccountCheck.self, from: data) {
-                self.addressIsOnNetwork.value = accountCheck.ready
-
-                self.socket.send(endpoint: .accountPending(address: self.address))
-            }
-
-            if let subscriptionBlock = genericDecoder(decodable: SubscriptionTransaction.self, from: data) {
-                // To prevent coming back to the app and receiving multiple subscription txns you may have gotten when you were away. Will improve later.
-                guard !self.isCurrentlySyncing.value, !self.isCurrentlySending.value else { return }
-
-                self.isCurrentlySyncing.value = true
-
-                return self.handle(subscriptionBlock: subscriptionBlock)
-            }
-
-            if let accountSubscribe = genericDecoder(decodable: AccountSubscribe.self, from: data) {
-                return self.handle(accountSubscribe: accountSubscribe) {
-                    self.socket.send(endpoint: .accountHistory(address: self.address, count: self.lastBlockCount.value))
-                }
-            }
-
-            if let accountHistory = genericDecoder(decodable: AccountHistory.self, from: data) {
-                return self.handle(accountHistory: accountHistory)
-            }
-
-            if let accountBalance = genericDecoder(decodable: AccountBalance.self, from: data) {
-                return self.handle(accountBalance: accountBalance)
-            }
-
-            if let accountInfo = genericDecoder(decodable: AccountInfo.self, from: data) {
-                self._previousFrontierHash.value = accountInfo.frontier
-
-                if self.updateWithLegacyBlock {
-                    // App has a block count here already, line below isn't pertinant
-                    self.accountInfo = accountInfo
-                }
-
-                self.socket.send(endpoint: .accountBlockCount(address: self.address))
-            }
-
-            if let pendingBlocks = genericDecoder(decodable: PendingBlocks.self, from: data) {
-                var pending = pendingBlocks
-                self.pendingBlocks = pending.setPendingItemHashes()
-
-                if self.pendingBlocks.count > 0 {
-                    self.isCurrentlySyncing.value = true
-
-                    if self.lastBlockCount.value == 0 {
-                        guard let source = self.pendingBlocks.first?.key, // Continue if there is a block to process
-                            let pendingBlock = self.pendingBlocks.first?.value else {
-                                self.isCurrentlySyncing.value = false
-                                return
-                        }
-
-                        self.processReceive(source: source, amount: pendingBlock.transactionAmount, previous: nil, representative: nil)
-
-                        return
-                    } else {
-                        self.getHeadBlock()
-                    }
-                }
-            }
-
-            if let accountBlockCount = genericDecoder(decodable: AccountBlockCount.self, from: data) {
-                self.lastBlockCount.value = accountBlockCount.count
-
-                self.socket.sendMultiple(endpoints: [
-                    .accountPending(address: self.address),
-                    .accountHistory(address: self.address, count: self.lastBlockCount.value),
-                    .accountBalance(address: self.address)
-                ])
-            }
-
-            if let headBlock = genericDecoder(decodable: StateBlockContainer.self, from: data) {
-                if let _ = headBlock.block as? LegacyBlock {
-                    self.updateWithLegacyBlock = true
-                    self.socket.send(endpoint: .accountInfo(address: self.address))
-                } else {
-                    self.headBlock = (headBlock.block as! StateBlock)
-                }
-
-                return
-            }
-
-            if let newFrontierHash = genericDecoder(decodable: HashReceive.self, from: data) {
-                self._previousFrontierHash.value = newFrontierHash.hash
-
-                return
-            }
-
-            if let errorMessage = genericDecoder(decodable: ErrorMessage.self, from: data) {
-                switch errorMessage.error {
-                case .oldBlock: self.socket.send(endpoint: .accountBlockCount(address: self.address))
-                case .fork, .accountNotFound: break
-                }
-            }
-
-//            print("fail, did not have an object for \(message)")
-        }
-
-        // Mark: - Open the web socket
-
-        socket.open()
-
-        // Mark: - Producer for _previousFrontierHash
-
-        _previousFrontierHash.producer.startWithValues { hash in
-            guard self.pendingBlocks.count != 0 else {
-                self.isCurrentlySyncing.value = false
-                self.socket.send(endpoint: .accountBlockCount(address: self.address))
-
-                return
-            }
-
-            self.getHeadBlock()
-        }
+//        NotificationCenter.default.addObserver(self, selector: #selector(appWasReopened(_:)), name: Notification.Name(rawValue: "ReestablishConnection"), object: nil)
+//
+//        socket.event.open = {
+////            print("socket opened")
+//            self._hasNetworkConnection.value = true
+//
+//            self.socket.sendMultiple(endpoints: [
+//                .accountSubscribe(uuid: self.userService.fetchCredentials()?.socketUUID, address: self.address),
+//                .accountCheck(address: self.address),
+//            ])
+//        }
+//
+//        socket.event.close = { code, reason, clean in
+//            AnalyticsEvent.socketClosedHome.track(customAttributes: ["code": code, "reason": reason])
+//
+//            self._hasNetworkConnection.value = false
+//            // print("CONNECTION WAS CLOSED")
+//        }
+//
+//        socket.event.error = { error in
+//            AnalyticsEvent.socketErrorHome.track(customAttributes: ["error": error.localizedDescription])
+//            // print("error \(error)")
+//        }
+//
+//        self.socket.event.message = { message in
+////            print(message) // Uncomment for development
+////            print("")
+//            guard let str = message as? String, let data = str.asUTF8Data() else { return }
+//
+//            if let accountCheck = genericDecoder(decodable: AccountCheck.self, from: data) {
+//                self.addressIsOnNetwork.value = accountCheck.ready
+//
+//                self.socket.send(endpoint: .accountPending(address: self.address))
+//            }
+//
+//            if let subscriptionBlock = genericDecoder(decodable: SubscriptionTransaction.self, from: data) {
+//                // To prevent coming back to the app and receiving multiple subscription txns you may have gotten when you were away. Will improve later.
+//                guard !self.isCurrentlySyncing.value, !self.isCurrentlySending.value else { return }
+//
+//                self.isCurrentlySyncing.value = true
+//
+//                return self.handle(subscriptionBlock: subscriptionBlock)
+//            }
+//
+//            if let accountSubscribe = genericDecoder(decodable: AccountSubscribe.self, from: data) {
+//                return self.handle(accountSubscribe: accountSubscribe) {
+//                    self.socket.send(endpoint: .accountHistory(address: self.address, count: self.lastBlockCount.value))
+//                }
+//            }
+//
+//            if let accountHistory = genericDecoder(decodable: AccountHistory.self, from: data) {
+//                return self.handle(accountHistory: accountHistory)
+//            }
+//
+//            if let accountBalance = genericDecoder(decodable: AccountBalance.self, from: data) {
+//                return self.handle(accountBalance: accountBalance)
+//            }
+//
+//            if let accountInfo = genericDecoder(decodable: AccountInfo.self, from: data) {
+//                self._previousFrontierHash.value = accountInfo.frontier
+//
+//                if self.updateWithLegacyBlock {
+//                    // App has a block count here already, line below isn't pertinant
+//                    self.accountInfo = accountInfo
+//                }
+//
+//                self.socket.send(endpoint: .accountBlockCount(address: self.address))
+//            }
+//
+//            if let pendingBlocks = genericDecoder(decodable: PendingBlocks.self, from: data) {
+//                var pending = pendingBlocks
+//                self.pendingBlocks = pending.setPendingItemHashes()
+//
+//                if self.pendingBlocks.count > 0 {
+//                    self.isCurrentlySyncing.value = true
+//
+//                    if self.lastBlockCount.value == 0 {
+//                        guard let source = self.pendingBlocks.first?.key, // Continue if there is a block to process
+//                            let pendingBlock = self.pendingBlocks.first?.value else {
+//                                self.isCurrentlySyncing.value = false
+//                                return
+//                        }
+//
+//                        self.processReceive(source: source, amount: pendingBlock.transactionAmount, previous: nil, representative: nil)
+//
+//                        return
+//                    } else {
+//                        self.getHeadBlock()
+//                    }
+//                }
+//            }
+//
+//            if let accountBlockCount = genericDecoder(decodable: AccountBlockCount.self, from: data) {
+//                self.lastBlockCount.value = accountBlockCount.count
+//
+//                self.socket.sendMultiple(endpoints: [
+//                    .accountPending(address: self.address),
+//                    .accountHistory(address: self.address, count: self.lastBlockCount.value),
+//                    .accountBalance(address: self.address)
+//                ])
+//            }
+//
+//            if let headBlock = genericDecoder(decodable: StateBlockContainer.self, from: data) {
+//                if let _ = headBlock.block as? LegacyBlock {
+//                    self.updateWithLegacyBlock = true
+//                    self.socket.send(endpoint: .accountInfo(address: self.address))
+//                } else {
+//                    self.headBlock = (headBlock.block as! StateBlock)
+//                }
+//
+//                return
+//            }
+//
+//            if let newFrontierHash = genericDecoder(decodable: HashReceive.self, from: data) {
+//                self._previousFrontierHash.value = newFrontierHash.hash
+//
+//                return
+//            }
+//
+//            if let errorMessage = genericDecoder(decodable: ErrorMessage.self, from: data) {
+//                switch errorMessage.error {
+//                case .oldBlock: self.socket.send(endpoint: .accountBlockCount(address: self.address))
+//                case .fork, .accountNotFound: break
+//                }
+//            }
+//
+////            print("fail, did not have an object for \(message)")
+//        }
+//
+//        // Mark: - Open the web socket
+//
+//        socket.open()
+//
+//        // Mark: - Producer for _previousFrontierHash
+//
+//        _previousFrontierHash.producer.startWithValues { hash in
+//            guard self.pendingBlocks.count != 0 else {
+//                self.isCurrentlySyncing.value = false
+//                self.socket.send(endpoint: .accountBlockCount(address: self.address))
+//
+//                return
+//            }
+//
+//            self.getHeadBlock()
+//        }
     }
 
     // MARK: - Functions
